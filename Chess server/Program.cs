@@ -10,6 +10,7 @@ namespace Chess_server
     {
         static void Main(string[] args)
         {
+
         }
     }
 }
