@@ -9,9 +9,9 @@ namespace Chess_server
 {
     class Server
     {
-        const int PORT = 5006;
+        const int PORT = 5002;
         static TcpListener listener;
-        static void Listen(string[] args)
+        public static void Listen()
         {
             try
             {
@@ -24,7 +24,7 @@ namespace Chess_server
                 while (true)
                 {
                     TcpClient client = listener.AcceptTcpClient();
-                    Thread t = new Thread(new ParameterizedThreadStart(Server.HandleClient));
+                    Thread t = new Thread(new ParameterizedThreadStart(HandleClient));
                     t.Start(client);
                 }
             }
@@ -39,8 +39,12 @@ namespace Chess_server
             }
         }
 
-        private static void HandleClient(object client)
+        private static void HandleClient(object cl)
         {
+            TcpClient client = (TcpClient)cl;
+            if (client == null)
+                throw new Exception("cloudn't convert client");
+
             throw new NotImplementedException();
         }
     }

@@ -10,7 +10,15 @@ namespace Chess_server
     {
         static void Main(string[] args)
         {
-
+            try
+            {
+                //Server.Listen();
+                Database.Open();
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
     }
 }
