@@ -43,20 +43,28 @@ namespace Chess_server
         // Returns whether or not the action succeeded
         public static bool AddUser(string username, string password)
         {
-            var cmd = new SQLiteCommand(con);
-            cmd.CommandText = "INSERT INTO USERS(USERNAME, PASSWORD) VALUES('" + username + "','" + password + "')";
-            if(cmd.ExecuteNonQuery() < 1)
+            try
+            {
+                var cmd = new SQLiteCommand(con);
+                cmd.CommandText = "INSERT INTO USERS(USERNAME, PASSWORD) VALUES('" + username + "','" + password + "')";
+                cmd.ExecuteNonQuery();
+                return true;
+            }
+            catch(Exception e)
+            {
                 return false;
-            return true;
+            }
         }
 
         // Checks if the password matches the username given by the client
         public static bool CheckPassword(string username, string password)
         {
             var cmd = new SQLiteCommand(con);
-            
 
-            string version = cmd.ExecuteScalar().ToString();
+            cmd.CommandText = "SELECT USERNAME FROM USERES WHERE USERNAME = '" + username + "' AND PASSWORD = '" + password + "' ";
+            string user = cmd.ExecuteScalar().ToString();
+            if (user != null)
+                return true;
             return false;
         }
 
@@ -65,7 +73,10 @@ namespace Chess_server
         // Returns null if its not
         public static string CheckIp(string ip)
         {
-            return null;
+            var cmd = new SQLiteCommand(con);
+
+            cmd.CommandText = "SELECT USERNAME FROM REMEMBER WHERE IP = '" +ip + "'";
+            return cmd.ExecuteScalar().ToString();
         }
     }
 }
