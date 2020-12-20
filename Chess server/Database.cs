@@ -61,9 +61,8 @@ namespace Chess_server
         {
             var cmd = new SQLiteCommand(con);
 
-            cmd.CommandText = "SELECT USERNAME FROM USERES WHERE USERNAME = '" + username + "' AND PASSWORD = '" + password + "' ";
-            string user = cmd.ExecuteScalar().ToString();
-            if (user != null)
+            cmd.CommandText = "SELECT USERNAME FROM USERS WHERE USERNAME = '" + username + "' AND PASSWORD = '" + password + "' ";
+            if (cmd.ExecuteScalar() != null)
                 return true;
             return false;
         }
@@ -76,7 +75,7 @@ namespace Chess_server
             var cmd = new SQLiteCommand(con);
 
             cmd.CommandText = "SELECT USERNAME FROM REMEMBER WHERE IP = '" +ip + "'";
-            return cmd.ExecuteScalar().ToString();
+            return cmd.ExecuteScalar() as string;
         }
     }
 }

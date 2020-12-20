@@ -12,8 +12,8 @@ namespace Chess_server
         {
             try
             {
-                //Server.Listen();
                 Database.Open();
+                //Server.Listen();
             }
             catch(Exception e)
             {
