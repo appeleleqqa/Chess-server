@@ -24,6 +24,7 @@ namespace Chess_server
                 while (true)
                 {
                     TcpClient client = listener.AcceptTcpClient();
+                    Console.WriteLine("Client accepted.");
                     Thread t = new Thread(new ParameterizedThreadStart(HandleClient));
                     t.Start(client);
                 }

@@ -13,7 +13,7 @@ namespace Chess_server
             try
             {
                 Database.Open();
-                //Server.Listen();
+                Server.Listen();
             }
             catch(Exception e)
             {
