@@ -4,6 +4,16 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Newtonsoft.Json;
+
+public class UserLogin
+{
+    public int Code { get; set; }
+    public string Username { get; set; }
+    public string Password { get; set; }
+}
+
+
 
 namespace Chess_server
 {
@@ -24,6 +34,7 @@ namespace Chess_server
                 while (true)
                 {
                     TcpClient client = listener.AcceptTcpClient();
+                    Console.WriteLine("client accepted");
                     Thread t = new Thread(new ParameterizedThreadStart(HandleClient));
                     t.Start(client);
                 }
@@ -45,7 +56,43 @@ namespace Chess_server
             if (client == null)
                 throw new Exception("cloudn't convert client");
 
-            throw new NotImplementedException();
+            string data = reciveMsg(client);
+            
+            UserLogin user = JsonConvert.DeserializeObject<UserLogin>(data);
+
+            switch (user.Code)
+            {
+
+            }
+
+            //writer.Close();
+            client.Close();
+        }
+
+        public static string reciveMsg(TcpClient client)
+        {
+            NetworkStream stream = client.GetStream();
+
+            string data = null;
+            Byte[] bytes = new Byte[256];
+            int i;
+            try
+            {
+                while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+                {
+                    string hex = BitConverter.ToString(bytes);
+                    data = Encoding.ASCII.GetString(bytes, 0, i);
+                    Console.WriteLine("{1}: Received: {0}", data, Thread.CurrentThread.ManagedThreadId);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception: {0}", e.ToString());
+                client.Close();
+            }
+            stream.Close();
+
+            return data;
         }
     }
 }

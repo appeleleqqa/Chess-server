@@ -10,15 +10,16 @@ namespace Chess_server
 {
     class Database
     {
+        private const string fp = @"../../Db.sql";
         private static SQLiteConnection con;
 
         // Opens the database file, incase there isn't a database file it creates a new one
         public static void Open()
         {
-            if(!File.Exists(@"../../Db.SQL"))
+            if(!File.Exists(fp))
             {
-                SQLiteConnection.CreateFile(@"../../Db.SQL");
-                con = new SQLiteConnection("Data Source =../../Db.SQL;Version=3;");
+                SQLiteConnection.CreateFile(fp);
+                con = new SQLiteConnection("Data Source =" + fp + ";Version=3;");
                 con.Open();
 
                 var cmd = new SQLiteCommand(con);
@@ -27,14 +28,10 @@ namespace Chess_server
                                     USERNAME varchar(15) PRIMARY KEY,
                                     PASSWORD varchar(32))";
                 cmd.ExecuteNonQuery();
-                cmd.CommandText = @"CREATE TABLE REMEMBER(
-                                    IP varchar(15) PRIMARY KEY,
-                                    USERNAME varchar(15))";
-                cmd.ExecuteNonQuery();
             }
             else
             {
-                con = new SQLiteConnection("Data Source =../../Db.SQL;Version=3;");
+                con = new SQLiteConnection("Data Source =" + fp + ";Version=3;");
                 con.Open();
             }
         }
@@ -65,17 +62,6 @@ namespace Chess_server
             if (cmd.ExecuteScalar() != null)
                 return true;
             return false;
-        }
-
-        // Checks if the user is remembered by the server
-        // Returns the username if it is
-        // Returns null if its not
-        public static string CheckIp(string ip)
-        {
-            var cmd = new SQLiteCommand(con);
-
-            cmd.CommandText = "SELECT USERNAME FROM REMEMBER WHERE IP = '" +ip + "'";
-            return cmd.ExecuteScalar() as string;
         }
     }
 }
