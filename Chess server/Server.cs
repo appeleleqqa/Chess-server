@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 public class UserLogin
 {
@@ -21,6 +22,7 @@ namespace Chess_server
     {
         const int PORT = 5002;
         static TcpListener listener;
+        static Dictionary<string, TcpClient> users = new Dictionary<string, TcpClient>();
         public static void Listen()
         {
             try
@@ -55,23 +57,49 @@ namespace Chess_server
             TcpClient client = (TcpClient)cl;
             if (client == null)
                 throw new Exception("cloudn't convert client");
+            NetworkStream stream = client.GetStream();
 
-            string data = reciveMsg(client);
-            
-            UserLogin user = JsonConvert.DeserializeObject<UserLogin>(data);
+            userLogin(client, stream);
 
-            switch (user.Code)
-            {
-
-            }
-
-            //writer.Close();
+           
+            stream.Close();
             client.Close();
         }
 
-        public static string reciveMsg(TcpClient client)
+
+        public static void userLogin(TcpClient client, NetworkStream stream)
         {
-            NetworkStream stream = client.GetStream();
+            while (true)
+            {
+                string data = reciveMsg(stream);
+                UserLogin user = JsonConvert.DeserializeObject<UserLogin>(data);
+
+                switch (user.Code)
+                {
+                    case 0:
+                        if(Database.CheckPassword(user.Username, user.Password))
+                        {
+                            users[user.Username] = client;
+                            return;
+                        }
+                        //send couldn't log in
+                        break;
+                    case 1:
+                        if (Database.AddUser(user.Username, user.Password))
+                        {
+                            users[user.Username] = client;
+                            return;
+                        }
+                        //send couldn't sign up
+                        break;
+                }
+            }
+        }
+
+
+        public static string reciveMsg(NetworkStream stream)
+        {
+            
 
             string data = null;
             Byte[] bytes = new Byte[256];
@@ -88,9 +116,8 @@ namespace Chess_server
             catch (Exception e)
             {
                 Console.WriteLine("Exception: {0}", e.ToString());
-                client.Close();
+                return null;
             }
-            stream.Close();
 
             return data;
         }
