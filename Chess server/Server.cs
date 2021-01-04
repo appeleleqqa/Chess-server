@@ -63,6 +63,7 @@ namespace Chess_server
 
            
             stream.Close();
+            //log the user out
             client.Close();
         }
 
@@ -74,24 +75,31 @@ namespace Chess_server
                 string data = reciveMsg(stream);
                 UserLogin user = JsonConvert.DeserializeObject<UserLogin>(data);
 
-                switch (user.Code)
+                if (!users.ContainsKey(user.Username))
                 {
-                    case 0:
-                        if(Database.CheckPassword(user.Username, user.Password))
-                        {
-                            users[user.Username] = client;
-                            return;
-                        }
-                        //send couldn't log in
-                        break;
-                    case 1:
-                        if (Database.AddUser(user.Username, user.Password))
-                        {
-                            users[user.Username] = client;
-                            return;
-                        }
-                        //send couldn't sign up
-                        break;
+                    switch (user.Code)
+                    {
+                        case 0:
+                            if (Database.CheckPassword(user.Username, user.Password))
+                            {
+                                users[user.Username] = client;
+                                return;
+                            }
+                            //send couldn't log in
+                            break;
+                        case 1:
+                            if (Database.AddUser(user.Username, user.Password))
+                            {
+                                users[user.Username] = client;
+                                return;
+                            }
+                            //send couldn't sign up
+                            break;
+                    }
+                }
+                else
+                {
+                    //user already in server
                 }
             }
         }
