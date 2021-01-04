@@ -7,17 +7,31 @@ using System.Threading;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-public class UserLogin
-{
-    public int Code { get; set; }
-    public string Username { get; set; }
-    public string Password { get; set; }
-}
-
-
 
 namespace Chess_server
 {
+    public class UserLogin
+    {
+        public int Code { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class loginMsg
+    {
+        public int Code { get; set; }
+    }
+
+    enum msgCodes
+    {
+        userLogin = 1,
+        userSignup,
+        loginConfirm,
+        signupConfirm,
+        infoDoesntMatch, //5
+        userExists,
+    }
+
     class Server
     {
         const int PORT = 5002;
@@ -58,17 +72,25 @@ namespace Chess_server
             if (client == null)
                 throw new Exception("cloudn't convert client");
             NetworkStream stream = client.GetStream();
+            string username = null;
+            try
+            {
+                username = userLogin(client, stream);
 
-            userLogin(client, stream);
+            }
+            finally
+            {
+                // User left
+                stream.Close();
+                if(username != null)
+                    users.Remove(username);
+                client.Close();
+            }
 
-           
-            stream.Close();
-            //log the user out
-            client.Close();
         }
 
 
-        public static void userLogin(TcpClient client, NetworkStream stream)
+        public static string userLogin(TcpClient client, NetworkStream stream)
         {
             while (true)
             {
@@ -79,19 +101,19 @@ namespace Chess_server
                 {
                     switch (user.Code)
                     {
-                        case 0:
+                        case (int)msgCodes.userLogin:
                             if (Database.CheckPassword(user.Username, user.Password))
                             {
                                 users[user.Username] = client;
-                                return;
+                                return user.Username;
                             }
                             //send couldn't log in
                             break;
-                        case 1:
+                        case (int)msgCodes.userSignup:
                             if (Database.AddUser(user.Username, user.Password))
                             {
                                 users[user.Username] = client;
-                                return;
+                                return user.Username;
                             }
                             //send couldn't sign up
                             break;
@@ -105,21 +127,18 @@ namespace Chess_server
         }
 
 
+        // Recives a 256 bytes long msg 
         public static string reciveMsg(NetworkStream stream)
         {
-            
-
             string data = null;
             Byte[] bytes = new Byte[256];
             int i;
             try
             {
-                while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-                {
-                    string hex = BitConverter.ToString(bytes);
-                    data = Encoding.ASCII.GetString(bytes, 0, i);
-                    Console.WriteLine("{1}: Received: {0}", data, Thread.CurrentThread.ManagedThreadId);
-                }
+                i = stream.Read(bytes, 0, bytes.Length);
+                string hex = BitConverter.ToString(bytes);
+                data = Encoding.ASCII.GetString(bytes, 0, i);
+                Console.WriteLine("{1}: Received: {0}", data, Thread.CurrentThread.ManagedThreadId);
             }
             catch (Exception e)
             {
