@@ -10,33 +10,67 @@ using System.Collections.Generic;
 
 namespace Chess_server
 {
-    public class UserLogin
-    {
-        public int Code { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-    }
-
-    public class loginMsg
-    {
-        public int Code { get; set; }
-    }
-
+    //the codes the server and client use to know what to do or tell eachother what to do
+    // ___login codes(1-7)____
+    //
+    // __client msg(1-2)__
+    // 1 - client requests login
+    // 2 - client requests signup
+    //
+    // __server resposes(3-7)__
+    // 3 - server confirms login
+    // 4 - server confirms signup
+    // 5 - password and username of the user do not match
+    // 6 - the user you are trying to create already exists
+    // 7 - the user you are trying to log into is already in the server
+    //
+    //
+    // ___lobby Codes(10-14)___
+    //
+    // __client msg(10-12)__
+    // 10 - client asks for a lobby to be opened 
+    // 11 - client asks to close a lobby
+    // 12 - client asks to join a lobby
+    //
+    // __server responses(13-15)
+    // 13 - lobby succsessfuly created
+    // 14 - lobby succsessfuly joined
+    // 15 - lobby succsessfuly closed
+    // 16 - something went wrong with opening a lobby
+    // 17 - something went wrong with closing a lobby
+    // 18 - the lobby the player was trying to join is full
+    // 19 - the lobby the player was trying to join does not exist
+    // 20 - the player has been kicked from the lobby
     enum msgCodes
     {
         userLogin = 1,
         userSignup,
         loginConfirm,
         signupConfirm,
-        infoDoesntMatch, //5
+        infoDoesntMatch, // 5
         userExists,
+        playerConnected,
+        CreateLobby = 10,
+        CloseLobby,
+        JoinLobby,
+        LobbyCreated,
+        LobbyJoined,
+        LobbyClosed, // 15
+        CouldntOpenLobby,
+        CantCloseLobby,
+        LobbyFull,
+        LobbyDoesntExist,
+        Kicked, //20
     }
 
     class Server
     {
+        //global vars
         const int PORT = 5002;
         static TcpListener listener;
-        static Dictionary<string, TcpClient> users = new Dictionary<string, TcpClient>();
+
+        //opens a listening socket that accept clients on an infinite loop
+        //creates a thread for each client
         public static void Listen()
         {
             try
@@ -66,87 +100,69 @@ namespace Chess_server
             }
         }
 
+        //a function that is used to handel clients one by one(this will be run as a thread)
         private static void HandleClient(object cl)
         {
+            if (!(cl is TcpClient))
+                throw new Exception("couldn't convert client");
             TcpClient client = (TcpClient)cl;
-            if (client == null)
-                throw new Exception("cloudn't convert client");
+
             NetworkStream stream = client.GetStream();
             string username = null;
+
             try
             {
-                username = userLogin(client, stream);
+                while(username == null)
+                    username = LoginManager.UserLogin(client, stream);
+                //this loop will work till a player has left, causing an Exception to be thrown
+                while(true)
+                {
+                    
+                }
+
 
             }
+            catch(Exception e)
+            { /*Console.WriteLine("Exception: {0}", e.Message);*/ }
             finally
             {
                 // User left
+                Console.WriteLine(username != null ? username + " has left" : "Client left");
                 stream.Close();
-                if(username != null)
-                    users.Remove(username);
+                if (username != null)
+                    LoginManager.LogOut(username);
                 client.Close();
             }
 
         }
 
 
-        public static string userLogin(TcpClient client, NetworkStream stream)
-        {
-            while (true)
-            {
-                string data = reciveMsg(stream);
-                UserLogin user = JsonConvert.DeserializeObject<UserLogin>(data);
-
-                if (!users.ContainsKey(user.Username))
-                {
-                    switch (user.Code)
-                    {
-                        case (int)msgCodes.userLogin:
-                            if (Database.CheckPassword(user.Username, user.Password))
-                            {
-                                users[user.Username] = client;
-                                return user.Username;
-                            }
-                            //send couldn't log in
-                            break;
-                        case (int)msgCodes.userSignup:
-                            if (Database.AddUser(user.Username, user.Password))
-                            {
-                                users[user.Username] = client;
-                                return user.Username;
-                            }
-                            //send couldn't sign up
-                            break;
-                    }
-                }
-                else
-                {
-                    //user already in server
-                }
-            }
-        }
 
 
         // Recives a 256 bytes long msg 
-        public static string reciveMsg(NetworkStream stream)
+        public static string ReceiveMsg(NetworkStream stream)
         {
-            string data = null;
-            Byte[] bytes = new Byte[256];
-            int i;
+            byte[] myReadBuffer = new byte[1024];
+            StringBuilder myCompleteMessage = new StringBuilder();
+            int numberOfBytesRead = 0;
             try
             {
-                i = stream.Read(bytes, 0, bytes.Length);
-                string hex = BitConverter.ToString(bytes);
-                data = Encoding.ASCII.GetString(bytes, 0, i);
-                Console.WriteLine("{1}: Received: {0}", data, Thread.CurrentThread.ManagedThreadId);
+                // Incoming message may be larger than the buffer size.
+                do
+                {
+                    numberOfBytesRead = stream.Read(myReadBuffer, 0, myReadBuffer.Length);
+
+                    myCompleteMessage.AppendFormat("{0}", Encoding.ASCII.GetString(myReadBuffer, 0, numberOfBytesRead));
+                }
+                while (stream.DataAvailable);
+
             }
             catch (Exception e)
             {
-                Console.WriteLine("Exception: {0}", e.ToString());
                 return null;
             }
 
-            return data;
+            return myCompleteMessage.ToString();
         }
     }
 }

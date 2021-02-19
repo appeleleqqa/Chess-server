@@ -82,10 +82,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Database.cs" />
+    <Compile Include="LobbyManager.cs" />
+    <Compile Include="LoginManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Server.cs" />
+    <Compile Include="Utilty\Database.cs" />
+    <Compile Include="Utilty\Json classes.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
