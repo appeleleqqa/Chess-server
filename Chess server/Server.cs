@@ -41,6 +41,8 @@ namespace Chess_server
     // 18 - the lobby the player was trying to join is full
     // 19 - the lobby the player was trying to join does not exist
     // 20 - the player has been kicked from the lobby
+    // 21 - the player asks for all the available lobbies
+    // 22 - the server sends the player all the available lobbies
     enum msgCodes
     {
         userLogin = 1,
@@ -61,6 +63,8 @@ namespace Chess_server
         LobbyFull,
         LobbyDoesntExist,
         Kicked, //20
+        GetLobbies,
+        Lobbies
     }
 
     class Server
@@ -108,7 +112,8 @@ namespace Chess_server
             TcpClient client = (TcpClient)cl;
 
             NetworkStream stream = client.GetStream();
-            string username = null;
+            string username = string.Empty;
+            string lobbyName = string.Empty;
 
             try
             {
@@ -117,7 +122,9 @@ namespace Chess_server
                 //this loop will work till a player has left, causing an Exception to be thrown
                 while(true)
                 {
-                    
+                    lobbyName = LobbyManager.PlayerNavagation(username, stream);
+                    //if(WaitForStart(lobby))
+                    // start game
                 }
 
 

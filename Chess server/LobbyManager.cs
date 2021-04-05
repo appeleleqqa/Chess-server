@@ -15,23 +15,37 @@ namespace Chess_server
         private static Mutex lobbyDictMutex = new Mutex();
         //a dictionaey contaning all the lobbies in this template
         // [host name] = {host, player2}
-        static Dictionary<string, Tuple<TcpClient, TcpClient>> lobbies = new Dictionary<string, Tuple<TcpClient, TcpClient>>();
+        static Dictionary<string, Tuple<string, string>> lobbies = new Dictionary<string, Tuple<string, string>>();
 
+        //while in the menu if a player sends a message this function will navagate the answer to him
         public static string PlayerNavagation(string username, NetworkStream stream)
         {
             while(true)
             {
+                //recive msg from player
                 string msg = Server.ReceiveMsg(stream);
                 LobbyMsg lby = JsonConvert.DeserializeObject<LobbyMsg>(msg);
                 switch (lby.Code)
                 {
+                    case (int)msgCodes.GetLobbies:
+                        //get all lobbies that aren't full
+                        foreach(KeyValuePair<string, Tuple<string, string>> entry in lobbies)
+                        {
+                            if(entry.Value.Item2 == null)
+                                msg += entry.Key  + entry.Value.ToString() + "\n";
+                        }
+                        msg = msgCodes.Lobbies.ToString() + "\n" + msg;
+                        stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
+                        break;
                     case (int)msgCodes.JoinLobby:
+                        //join lobby, if succsusful return lobby name
                         msg = ((int)JoinLobby(username, lby.LobbyName)).ToString();
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         if (msg == ((int)msgCodes.LobbyJoined).ToString())
                             return lby.LobbyName;
                         break;
                     case (int)msgCodes.CreateLobby:
+                        //create lobby, if succsusful return lobby name
                         msg = ((int)msgCodes.LobbyCreated).ToString();
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         if (msg == ((int)msgCodes.LobbyJoined).ToString())
@@ -44,7 +58,7 @@ namespace Chess_server
         public static void OpenLobby(string username)
         {
             lobbyDictMutex.WaitOne();
-            lobbies[username] = new Tuple<TcpClient, TcpClient>(LoginManager.users[username], null);
+            lobbies[username] = new Tuple<string, string>(username, null);
             lobbyDictMutex.ReleaseMutex();
         }
 
@@ -55,7 +69,7 @@ namespace Chess_server
             {
                 if (lobbies[lobbyname].Item2 == null)
                 {
-                    lobbies[lobbyname] = new Tuple<TcpClient, TcpClient>(lobbies[lobbyname].Item1, LoginManager.users[username]);
+                    lobbies[lobbyname] = new Tuple<string, string>(lobbies[lobbyname].Item1, username);
                     lobbyDictMutex.ReleaseMutex();
                     return msgCodes.LobbyJoined;
                 }
