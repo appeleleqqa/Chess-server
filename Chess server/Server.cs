@@ -117,7 +117,7 @@ namespace Chess_server
 
             try
             {
-                while(username == null)
+                while(username == string.Empty)
                     username = LoginManager.UserLogin(client, stream);
                 //this loop will work till a player has left, causing an Exception to be thrown
                 while(true)

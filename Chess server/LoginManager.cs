@@ -74,6 +74,7 @@ namespace Chess_server
         {
             userListMutex.WaitOne();
             users.Remove(username);
+            LobbyManager.CloseLobby(username);//if the client crashed while being in a lobby
             userListMutex.ReleaseMutex();
         }
         
