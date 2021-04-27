@@ -12,13 +12,8 @@ namespace Chess_server
     //takes care of cenarios that revolve a lobby
     class LobbyManager
     {
-        private static Mutex lobbyDictMutex = new Mutex();
-        //a dictionaey contaning all the lobbies in this template
-        // dict[host name] = player 2 name(in the case of an empty spot this will be String.empty)
-        static Dictionary<string, string> lobbies = new Dictionary<string, string>();
-
         //while in the menu if a player sends a message this function will navagate the answer to him
-        public static string PlayerNavagation(string username, NetworkStream stream)
+        public static Lobby PlayerNavagation(string username, NetworkStream stream)
         {
             while(true)
             {
@@ -29,53 +24,72 @@ namespace Chess_server
                 {
                     case (int)msgCodes.GetLobbies:
                         //get all lobbies that aren't full
-                        msg = "[";
-                        foreach(KeyValuePair<string, string> entry in lobbies)
-                        {
-                            if(entry.Value == string.Empty)
-                                msg += '"' + entry.Key + "\",";
-                        }
-                        msg = msg.Substring(0,msg.Length - 1)/*get rid of the final comma*/  + "]";
-                        msg = "{\"Code\":"+msgCodes.Lobbies.ToString()+ ", \"Lobbies\":" + msg + "}";
+                        msg = Lobby.JoinableLobbiesJson();
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         break;
                     case (int)msgCodes.JoinLobby:
                         //join lobby, if succsusful return lobby name
-                        msg = ((int)JoinLobby(username, lby.HostName)).ToString();
+                        Tuple<msgCodes, Lobby> lobbyT = Lobby.JoinLobby(username, lby.HostName);
+                        msg = ((int)lobbyT.Item1).ToString();
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         if (msg == ((int)msgCodes.LobbyJoined).ToString())
-                            return lby.HostName;
+                            return lobbyT.Item2;
                         break;
                     case (int)msgCodes.CreateLobby:
                         //create lobby, if succsusful return lobby name
-                        msg = ((int)OpenLobby(username)).ToString();
+                        Lobby lobby = null;
+                        try
+                        {
+                            lobby = new Lobby(username);
+                            msg = ((int)msgCodes.LobbyCreated).ToString();
+                        }
+                        catch
+                        {
+                            msg = ((int)msgCodes.CouldntOpenLobby).ToString();
+                        }
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         if (msg == ((int)msgCodes.LobbyJoined).ToString())
-                            return lby.HostName;
+                            return lobby;
                         break;
                 }
             }
         }
 
+
+        //after a player joins a lobby, as the host he can decide to kick or start
+        //this function will return true when the game starts
+        // false can mean 2 things
+        //as a host false = you closed the lobby
+        //as a player false = you have been kicked
+        //public static bool InsideLobby(string hostName, string username, NetworkStream stream)
+        //{
+        //    if(hostName == username)
+        //    {
+
+        //    }
+
+        //}
+
+
         //opens a lobby
         //true on success
         //false on failure
-        public static msgCodes OpenLobby(string username)
-        {
-            try
-            {
-                lobbyDictMutex.WaitOne();
-                if (lobbies.ContainsKey(username))
-                    return msgCodes.CouldntOpenLobby;
-                lobbies[username] = string.Empty;
-                lobbyDictMutex.ReleaseMutex();
-            }
-            catch
-            {
-                return msgCodes.CouldntOpenLobby;
-            }
-            return msgCodes.LobbyCreated;
-        }
+        //public static msgCodes OpenLobby(string username)
+        //{
+        //    try
+        //    {
+        //        lobbyDictMutex.WaitOne();
+        //        if (lobbies.ContainsKey(username))
+        //            return msgCodes.CouldntOpenLobby;
+        //        lobbies[username] = string.Empty;
+        //        lobbyDictMutex.ReleaseMutex();
+        //    }
+        //    catch
+        //    {
+        //        return msgCodes.CouldntOpenLobby;
+        //    }
+        //    return msgCodes.LobbyCreated;
+        //}
 
         //closes lobby(if one exists)
         public static void CloseLobby(string username)
@@ -85,22 +99,22 @@ namespace Chess_server
         }
 
         //checks if the lobby the player tried to join is joinable and returns a msg code depending on the result
-        public static msgCodes JoinLobby(string username, string hostName)
-        {
-            lobbyDictMutex.WaitOne();
-            if (lobbies.ContainsKey(username))
-            {
-                if (lobbies[hostName] == string.Empty)
-                {
-                    lobbies[hostName] = username; 
-                    lobbyDictMutex.ReleaseMutex();
-                    return msgCodes.LobbyJoined;
-                }
-                return msgCodes.LobbyFull;
-            }
-            lobbyDictMutex.ReleaseMutex();
-            return msgCodes.LobbyDoesntExist;
-        }
+        //public static msgCodes JoinLobby(string username, string hostName)
+        //{
+        //    lobbyDictMutex.WaitOne();
+        //    if (lobbies.ContainsKey(username))
+        //    {
+        //        if (lobbies[hostName] == string.Empty)
+        //        {
+        //            lobbies[hostName] = username; 
+        //            lobbyDictMutex.ReleaseMutex();
+        //            return msgCodes.LobbyJoined;
+        //        }
+        //        return msgCodes.LobbyFull;
+        //    }
+        //    lobbyDictMutex.ReleaseMutex();
+        //    return msgCodes.LobbyDoesntExist;
+        //}
 
     }
 }
