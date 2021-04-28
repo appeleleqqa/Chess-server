@@ -92,11 +92,11 @@ namespace Chess_server
         //}
 
         //closes lobby(if one exists)
-        public static void CloseLobby(string username)
-        {
-            //if lobby doesn't exist, simply does nothing
-            lobbies.Remove(username);
-        }
+        //public static void CloseLobby(string username)
+        //{
+        //    //if lobby doesn't exist, simply does nothing
+        //    lobbies.Remove(username);
+        //}
 
         //checks if the lobby the player tried to join is joinable and returns a msg code depending on the result
         //public static msgCodes JoinLobby(string username, string hostName)

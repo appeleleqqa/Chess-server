@@ -16,6 +16,8 @@ namespace Chess_server
 		private string hostName;
 		private string player2 = string.Empty;
 
+		//creates a new lobby
+		//throws an exception on fail
 		public Lobby(string username)
 		{
 			lobbiesMutex.WaitOne();
@@ -29,6 +31,8 @@ namespace Chess_server
 			lobbiesMutex.ReleaseMutex();
 		}
 
+		//tries to join a lobby, returns the msgCode that tells you what is the outcome and the lobby you joined
+		//if the player didn't manage to join lobby = null
 		public static  Tuple<msgCodes, Lobby> JoinLobby(string username, string hostname)
         {
 			lobbiesMutex.WaitOne();
@@ -42,6 +46,7 @@ namespace Chess_server
 			return new Tuple<msgCodes, Lobby>(msgCodes.LobbyFull, null);
         }
 
+		//checks if a lobby is joinable
 		public bool IsJoinable()
         {
 			if (player2 == string.Empty)
@@ -49,6 +54,8 @@ namespace Chess_server
 			return false;
 		}
 
+		//goes over every lobby in the static array of lobbies and check which ones are joinable
+		//retruns a json array with the coresponding code and the array of joinable lobbies
 		public static string JoinableLobbiesJson()
 		{
 			string msg = "[";
@@ -64,6 +71,7 @@ namespace Chess_server
 			return msg;
 		}
 
+		//closes a lobby
 		public static void CloseLobby(string hostname)
 		{
 			existingLobbies.Remove(hostname);
