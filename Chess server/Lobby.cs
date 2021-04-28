@@ -15,6 +15,8 @@ namespace Chess_server
 		private static Mutex lobbiesMutex;
 		private string hostName;
 		private string player2 = string.Empty;
+		private Mutex WaitForAction;
+		private msgCodes hostMsg;
 
 		//creates a new lobby
 		//throws an exception on fail
@@ -28,6 +30,7 @@ namespace Chess_server
 			}
 			hostName = username;
 			existingLobbies.Add(username, this);
+			WaitForAction.WaitOne();
 			lobbiesMutex.ReleaseMutex();
 		}
 
@@ -76,5 +79,33 @@ namespace Chess_server
 		{
 			existingLobbies.Remove(hostname);
 		}
+
+		public Game WaitForStart(string username, NetworkStream stream)
+        {
+			if (hostName == username)
+				return HostLobby(stream);
+			return PlayerLobby(stream);
+        }
+
+		private Game HostLobby(NetworkStream stream)
+        {
+			while(Server.ReceiveMsg(stream) != msgCodes.);
+
+			return null;
+        }
+
+		private Game PlayerLobby(NetworkStream stream)
+        {
+			WaitForAction.WaitOne();
+			switch(hostMsg)
+            {
+				case msgCodes.Kicked:
+					//send the player that he got kicked
+					player2 = string.Empty;
+					return null;
+				//game started case
+            }
+			return null;
+        }
 	}
 }

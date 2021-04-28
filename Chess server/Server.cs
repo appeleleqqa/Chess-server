@@ -64,7 +64,9 @@ namespace Chess_server
         LobbyDoesntExist,
         Kicked, //20
         GetLobbies,
-        Lobbies
+        Lobbies,
+        StartGame = 30,
+        GameStarted,
     }
 
     class Server
@@ -113,7 +115,7 @@ namespace Chess_server
 
             NetworkStream stream = client.GetStream();
             string username = string.Empty;
-            string lobbyName = string.Empty;
+            Lobby lobby = null;
 
             try
             {
@@ -122,14 +124,16 @@ namespace Chess_server
                 //this loop will work till a player has left, causing an Exception to be thrown
                 while(true)
                 {
-                    lobbyName = LobbyManager.PlayerNavagation(username, stream);
-                    //if(WaitForStart(lobby))
-                    // start game
+                    lobby = LobbyManager.PlayerNavagation(username, stream);
+                    //if(lobby.WaitForStart == null)
+                    {
+
+                    }
                 }
 
 
             }
-            catch(Exception e)
+            catch
             { /*Console.WriteLine("Exception: {0}", e.Message);*/ }
             finally
             {
@@ -164,7 +168,7 @@ namespace Chess_server
                 while (stream.DataAvailable);
 
             }
-            catch (Exception e)
+            catch
             {
                 return null;
             }
