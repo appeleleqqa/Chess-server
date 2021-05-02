@@ -12,6 +12,10 @@ user["Username"] = input("username: ")
 user["Password"] = input("password: ")
 sock.sendall(json.dumps(user).encode())
 data = sock.recv(1024)
-
 print('Received', repr(data))
-        
+
+lobby = {}
+lobby["Code"] = 10
+lobby["HostName"] = user["Username"]
+sock.sendall(json.dumps(lobby).encode()) 
+print('Received', repr(data))

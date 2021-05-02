@@ -51,9 +51,11 @@ namespace Chess_server
                         msg = (hasUser ? (int)msgCodes.loginConfirm : (int)msgCodes.signupConfirm).ToString();
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         Console.WriteLine(user.Username +" has joined");
+                        userListMutex.ReleaseMutex();
                         return user.Username;
                     }
-                    
+                    userListMutex.ReleaseMutex();
+
                     //if the condition doesn't meet the server send one of the following:
                     //login - username and password don't match
                     //signup - user already exits
@@ -66,7 +68,6 @@ namespace Chess_server
                     string msg = ((int)msgCodes.playerConnected).ToString();
                     stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                 }
-                userListMutex.ReleaseMutex();
             }
         }
 
@@ -74,7 +75,7 @@ namespace Chess_server
         {
             userListMutex.WaitOne();
             users.Remove(username);
-            LobbyManager.CloseLobby(username);//if the client crashed while being in a lobby
+            Lobby.CloseLobby(username);//if the client crashed while being in a lobby
             userListMutex.ReleaseMutex();
         }
         

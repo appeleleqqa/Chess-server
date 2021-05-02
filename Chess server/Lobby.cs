@@ -11,8 +11,8 @@ namespace Chess_server
 {
 	class Lobby
 	{
-		private static Dictionary<string, Lobby> existingLobbies;
-		private static Mutex lobbiesMutex;
+		private static Dictionary<string, Lobby> existingLobbies = new Dictionary<string, Lobby>();
+		private static Mutex lobbiesMutex = new Mutex();
 		private string hostName;
 		private string player2 = string.Empty;
 		private Mutex WaitForAction;
@@ -30,6 +30,7 @@ namespace Chess_server
 			}
 			hostName = username;
 			existingLobbies.Add(username, this);
+			WaitForAction = new Mutex();
 			WaitForAction.WaitOne();
 			lobbiesMutex.ReleaseMutex();
 		}
@@ -89,7 +90,7 @@ namespace Chess_server
 
 		private Game HostLobby(NetworkStream stream)
         {
-			while(Server.ReceiveMsg(stream) != msgCodes.);
+			//while(Server.ReceiveMsg(stream) != msgCodes);
 
 			return null;
         }
