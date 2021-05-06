@@ -17,6 +17,12 @@ namespace Chess_server
     public class LobbyMsg
     {
         public int Code { get; set; }
-        public string HostName { get; set; }
+        public string Username { get; set; }
+    }
+
+    public class LobbyListMsg
+    {
+        public int Code { get; set; }
+        public List<string> Lobbies { get; set; }
     }
 }

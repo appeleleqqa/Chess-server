@@ -24,12 +24,15 @@ namespace Chess_server
                 {
                     case (int)msgCodes.GetLobbies:
                         //get all lobbies that aren't full
-                        msg = Lobby.JoinableLobbiesJson();
+                        LobbyListMsg lbyList = new LobbyListMsg();
+                        lbyList.Lobbies = Lobby.JoinableLobbiesJson();
+                        lbyList.Code = (int)msgCodes.Lobbies;
+                        msg = JsonConvert.SerializeObject(lbyList);
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         break;
                     case (int)msgCodes.JoinLobby:
                         //join lobby, if succsusful return lobby name
-                        Tuple<msgCodes, Lobby> lobbyT = Lobby.JoinLobby(username, lby.HostName);
+                        Tuple<msgCodes, Lobby> lobbyT = Lobby.JoinLobby(username, lby.Username);
                         msg = ((int)lobbyT.Item1).ToString();
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
                         if (msg == ((int)msgCodes.LobbyJoined).ToString())
@@ -48,7 +51,7 @@ namespace Chess_server
                             msg = ((int)msgCodes.CouldntOpenLobby).ToString();
                         }
                         stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
-                        if (msg == ((int)msgCodes.LobbyJoined).ToString())
+                        if (msg == ((int)msgCodes.LobbyCreated).ToString())
                             return lobby;
                         break;
                 }

@@ -67,6 +67,8 @@ namespace Chess_server
         Lobbies,
         StartGame = 30,
         GameStarted,
+        PlayerJoined,
+        KickPlayer
     }
 
     class Server
@@ -125,6 +127,10 @@ namespace Chess_server
                 while(true)
                 {
                     lobby = LobbyManager.PlayerNavagation(username, stream);
+                    while (true)
+                    {
+
+                    }    
                     //if(lobby.WaitForStart == null)
                     {
 

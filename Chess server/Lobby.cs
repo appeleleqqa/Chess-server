@@ -14,7 +14,9 @@ namespace Chess_server
 		private static Dictionary<string, Lobby> existingLobbies = new Dictionary<string, Lobby>();
 		private static Mutex lobbiesMutex = new Mutex();
 		private string hostName;
+		private NetworkStream hostStream = null;
 		private string player2 = string.Empty;
+		private NetworkStream player2Stream;
 		private Mutex WaitForAction;
 		private msgCodes hostMsg;
 
@@ -45,6 +47,11 @@ namespace Chess_server
 			if (existingLobbies[hostname].IsJoinable())
             {
 				existingLobbies[hostname].player2 = username;
+				LobbyMsg lby = new LobbyMsg();
+				lby.Username = username;
+				lby.Code = (int)msgCodes.PlayerJoined;
+				string msg = JsonConvert.SerializeObject(lby);
+				existingLobbies[hostname].hostStream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
 				return new Tuple<msgCodes, Lobby>(msgCodes.LobbyJoined, existingLobbies[hostname]) ;
             }
 			return new Tuple<msgCodes, Lobby>(msgCodes.LobbyFull, null);
@@ -60,24 +67,29 @@ namespace Chess_server
 
 		//goes over every lobby in the static array of lobbies and check which ones are joinable
 		//retruns a json array with the coresponding code and the array of joinable lobbies
-		public static string JoinableLobbiesJson()
+		public static List<string> JoinableLobbiesJson()
 		{
-			string msg = "[";
+			List<string> lobbies = new List<string>();
 			lobbiesMutex.WaitOne();
 			foreach (KeyValuePair<string, Lobby> entry in Lobby.existingLobbies)
 			{
 				if (entry.Value.IsJoinable())
-					msg += '"' + entry.Key + "\",";
+					lobbies.Add(entry.Key);
 			}
 			lobbiesMutex.ReleaseMutex();
-			msg = msg.Substring(0, msg.Length - 1)/*get rid of the final comma*/  + "]";
-			msg = "{\"Code\":" + msgCodes.Lobbies.ToString() + ", \"Lobbies\":" + msg + "}";
-			return msg;
+			return lobbies;
 		}
 
 		//closes a lobby
 		public static void CloseLobby(string hostname)
 		{
+			Lobby lby = existingLobbies[hostname];
+
+			if (lby.player2 != string.Empty)
+            {
+				lby.hostMsg = msgCodes.LobbyClosed;
+				lby.WaitForAction.ReleaseMutex();
+			}
 			existingLobbies.Remove(hostname);
 		}
 
@@ -90,21 +102,45 @@ namespace Chess_server
 
 		private Game HostLobby(NetworkStream stream)
         {
-			//while(Server.ReceiveMsg(stream) != msgCodes);
-
+			hostStream = stream;
+			while (true)
+			{
+				hostMsg = (msgCodes)int.Parse(Server.ReceiveMsg(stream));
+				if (hostMsg != msgCodes.KickPlayer)
+					break;
+				WaitForAction.ReleaseMutex();
+			}
+			switch (hostMsg)
+            {
+				case msgCodes.CloseLobby:
+					CloseLobby(hostName);
+					return null;
+				case msgCodes.StartGame:
+					break;
+            }				
+			//create game
+			//return game
 			return null;
         }
 
 		private Game PlayerLobby(NetworkStream stream)
         {
 			WaitForAction.WaitOne();
-			switch(hostMsg)
+			string msg;
+			switch (hostMsg)
             {
-				case msgCodes.Kicked:
-					//send the player that he got kicked
+				case msgCodes.KickPlayer:
+					msg = ((int)msgCodes.Kicked).ToString();
+					stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
 					player2 = string.Empty;
 					return null;
-				//game started case
+				case msgCodes.LobbyClosed:
+					msg = ((int)msgCodes.LobbyClosed).ToString();
+					stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
+					return null;
+				case msgCodes.StartGame:
+					//return game object
+					break;
             }
 			return null;
         }
