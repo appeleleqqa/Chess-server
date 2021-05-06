@@ -47,7 +47,7 @@ namespace Chess_server
                 cmd.ExecuteNonQuery();
                 return true;
             }
-            catch(Exception e)
+            catch
             {
                 return false;
             }
