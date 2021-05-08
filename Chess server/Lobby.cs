@@ -13,28 +13,29 @@ namespace Chess_server
 	{
 		private static Dictionary<string, Lobby> existingLobbies = new Dictionary<string, Lobby>();
 		private static Mutex lobbiesMutex = new Mutex();
+
 		private string hostName;
 		private NetworkStream hostStream = null;
 		private string player2 = string.Empty;
-		private NetworkStream player2Stream;
-		private Mutex WaitForAction;
+		private bool msgAvb = false;
 		private msgCodes hostMsg;
 
 		//creates a new lobby
 		//throws an exception on fail
 		public Lobby(string username)
 		{
+			//check if the lobby already exists
 			lobbiesMutex.WaitOne();
 			if(existingLobbies.ContainsKey(username))
 			{
 				lobbiesMutex.ReleaseMutex();
 				throw new Exception();
 			}
-			hostName = username;
 			existingLobbies.Add(username, this);
-			WaitForAction = new Mutex();
-			WaitForAction.WaitOne();
 			lobbiesMutex.ReleaseMutex();
+
+			hostName = username;
+			msgAvb = false;
 		}
 
 		//tries to join a lobby, returns the msgCode that tells you what is the outcome and the lobby you joined
@@ -83,16 +84,20 @@ namespace Chess_server
 		//closes a lobby
 		public static void CloseLobby(string hostname)
 		{
-			Lobby lby = existingLobbies[hostname];
-
-			if (lby.player2 != string.Empty)
-            {
-				lby.hostMsg = msgCodes.LobbyClosed;
-				lby.WaitForAction.ReleaseMutex();
+			if (existingLobbies.ContainsKey(hostname))
+			{
+				Lobby lby = existingLobbies[hostname];
+				if (lby.player2 != string.Empty)
+				{
+					lby.hostMsg = msgCodes.LobbyClosed;
+					lby.msgAvb = true;
+				}
+				existingLobbies.Remove(hostname);
 			}
-			existingLobbies.Remove(hostname);
 		}
 
+		//this function is called right after a player joins the lobby
+		//it calls a function that is diffrent for the host and the 2nd player
 		public Game WaitForStart(string username, NetworkStream stream)
         {
 			if (hostName == username)
@@ -100,6 +105,8 @@ namespace Chess_server
 			return PlayerLobby(stream);
         }
 
+		//the function that runs while a player is in a lobby he created
+		//lets the host send commands to the server(kick, close lobby and start game)
 		private Game HostLobby(NetworkStream stream)
         {
 			hostStream = stream;
@@ -108,7 +115,7 @@ namespace Chess_server
 				hostMsg = (msgCodes)int.Parse(Server.ReceiveMsg(stream));
 				if (hostMsg != msgCodes.KickPlayer)
 					break;
-				WaitForAction.ReleaseMutex();
+				msgAvb = true;
 			}
 			switch (hostMsg)
             {
@@ -123,9 +130,12 @@ namespace Chess_server
 			return null;
         }
 
+		//the function that runs while a player is in a lobby he joined
+		//waits for the host to send a message and sents it to the player
 		private Game PlayerLobby(NetworkStream stream)
         {
-			WaitForAction.WaitOne();
+			while (!msgAvb) ;
+			msgAvb = false;
 			string msg;
 			switch (hostMsg)
             {
@@ -133,6 +143,7 @@ namespace Chess_server
 					msg = ((int)msgCodes.Kicked).ToString();
 					stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
 					player2 = string.Empty;
+
 					return null;
 				case msgCodes.LobbyClosed:
 					msg = ((int)msgCodes.LobbyClosed).ToString();

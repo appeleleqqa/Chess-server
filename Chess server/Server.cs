@@ -27,48 +27,54 @@ namespace Chess_server
     //
     // ___lobby Codes(10-14)___
     //
-    // __client msg(10-12)__
+    // __client msg(10-14)__
     // 10 - client asks for a lobby to be opened 
     // 11 - client asks to close a lobby
     // 12 - client asks to join a lobby
+    // 13 - host asks to kick a player
+    // 14 - player asks to leave lobby(TODO)
     //
-    // __server responses(13-15)
-    // 13 - lobby succsessfuly created
-    // 14 - lobby succsessfuly joined
-    // 15 - lobby succsessfuly closed
-    // 16 - something went wrong with opening a lobby
-    // 17 - something went wrong with closing a lobby
-    // 18 - the lobby the player was trying to join is full
-    // 19 - the lobby the player was trying to join does not exist
-    // 20 - the player has been kicked from the lobby
-    // 21 - the player asks for all the available lobbies
-    // 22 - the server sends the player all the available lobbies
+    //
+    // __server notifications(15)__
+    // 15 - a player has joined the lobby
+    //
+    // __server responses(20 - 29)__
+    // 20 - lobby succsessfuly created
+    // 21 - lobby succsessfuly joined
+    // 22 - lobby succsessfuly closed
+    // 23 - something went wrong with opening a lobby
+    // 24 - something went wrong with closing a lobby
+    // 25 - the lobby the player was trying to join is full
+    // 26 - the lobby the player was trying to join does not exist
+    // 27 - the player has been kicked from the lobby
+    // 28 - the player asks for all the available lobbies
+    // 29 - the server sends the player all the available lobbies
     enum msgCodes
     {
         userLogin = 1,
         userSignup,
         loginConfirm,
         signupConfirm,
-        infoDoesntMatch, // 5
+        infoDoesntMatch, 
         userExists,
         playerConnected,
         CreateLobby = 10,
         CloseLobby,
         JoinLobby,
-        LobbyCreated,
+        KickPlayer,
+        PlayerJoined = 15,
+        LobbyCreated = 20,
         LobbyJoined,
-        LobbyClosed, // 15
+        LobbyClosed, 
         CouldntOpenLobby,
         CantCloseLobby,
         LobbyFull,
         LobbyDoesntExist,
-        Kicked, //20
+        Kicked, 
         GetLobbies,
         Lobbies,
         StartGame = 30,
         GameStarted,
-        PlayerJoined,
-        KickPlayer
     }
 
     class Server
@@ -127,11 +133,7 @@ namespace Chess_server
                 while(true)
                 {
                     lobby = LobbyManager.PlayerNavagation(username, stream);
-                    while (true)
-                    {
-
-                    }    
-                    //if(lobby.WaitForStart == null)
+                    if (lobby.WaitForStart(username, stream) != null)
                     {
 
                     }
