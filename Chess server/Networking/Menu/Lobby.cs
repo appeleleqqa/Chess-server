@@ -19,6 +19,7 @@ namespace Chess_server
 		private string player2 = string.Empty;
 		private bool msgAvb = false;
 		private msgCodes hostMsg;
+		private ChessGame game = null;
 
 		//creates a new lobby
 		//throws an exception on fail
@@ -98,7 +99,7 @@ namespace Chess_server
 
 		//this function is called right after a player joins the lobby
 		//it calls a function that is diffrent for the host and the 2nd player
-		public Game WaitForStart(string username, NetworkStream stream)
+		public ChessGame WaitForStart(string username, NetworkStream stream)
         {
 			if (hostName == username)
 				return HostLobby(stream);
@@ -107,15 +108,16 @@ namespace Chess_server
 
 		//the function that runs while a player is in a lobby he created
 		//lets the host send commands to the server(kick, close lobby and start game)
-		private Game HostLobby(NetworkStream stream)
+		private ChessGame HostLobby(NetworkStream stream)
         {
 			hostStream = stream;
 			while (true)
 			{
 				hostMsg = (msgCodes)int.Parse(Server.ReceiveMsg(stream));
-				if (hostMsg != msgCodes.KickPlayer)
+				if (hostMsg == msgCodes.KickPlayer)
+					msgAvb = true;
+				else if (hostMsg == msgCodes.CloseLobby || hostMsg == msgCodes.StartGame)
 					break;
-				msgAvb = true;
 			}
 			switch (hostMsg)
             {
@@ -123,16 +125,16 @@ namespace Chess_server
 					CloseLobby(hostName);
 					return null;
 				case msgCodes.StartGame:
-					break;
+					game = new ChessGame(hostName);
+					msgAvb = true;
+					return game;
             }				
-			//create game
-			//return game
 			return null;
         }
 
 		//the function that runs while a player is in a lobby he joined
 		//waits for the host to send a message and sents it to the player
-		private Game PlayerLobby(NetworkStream stream)
+		private ChessGame PlayerLobby(NetworkStream stream)
         {
 			while (!msgAvb) ;
 			msgAvb = false;
@@ -150,8 +152,7 @@ namespace Chess_server
 					stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
 					return null;
 				case msgCodes.StartGame:
-					//return game object
-					break;
+					return game;
             }
 			return null;
         }

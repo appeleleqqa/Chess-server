@@ -25,18 +25,19 @@ namespace Chess_server
     // 7 - the user you are trying to log into is already in the server
     //
     //
-    // ___lobby Codes(10-14)___
+    // ___lobby Codes(10-29)___
     //
-    // __client msg(10-14)__
+    // __client msg(10-15)__
     // 10 - client asks for a lobby to be opened 
     // 11 - client asks to close a lobby
     // 12 - client asks to join a lobby
     // 13 - host asks to kick a player
-    // 14 - player asks to leave lobby(TODO)
+    // 14 - host asks to start the game
+    // 15 - player asks to leave lobby(TODO)
     //
-    //
-    // __server notifications(15)__
-    // 15 - a player has joined the lobby
+    // __server notifications(16-17)__
+    // 16 - a player has joined the lobby
+    // 17 - game started
     //
     // __server responses(20 - 29)__
     // 20 - lobby succsessfuly created
@@ -49,6 +50,20 @@ namespace Chess_server
     // 27 - the player has been kicked from the lobby
     // 28 - the player asks for all the available lobbies
     // 29 - the server sends the player all the available lobbies
+    //
+    //
+    // ___game Codes(30-?)___
+    //
+    // __client msg(30)__
+    // 30 - make a move
+    //
+    // __server notifications(35-?)__
+    // 35 - send all possible moves for the player
+    // 36 - invalid move
+    // 37 - white victory
+    // 38 - black victory
+    // 39 - move piece
+    // 40 - draw(ToDo)
     enum msgCodes
     {
         userLogin = 1,
@@ -62,7 +77,9 @@ namespace Chess_server
         CloseLobby,
         JoinLobby,
         KickPlayer,
-        PlayerJoined = 15,
+        StartGame,
+        PlayerJoined = 16,
+        GameStarted,
         LobbyCreated = 20,
         LobbyJoined,
         LobbyClosed, 
@@ -73,8 +90,12 @@ namespace Chess_server
         Kicked, 
         GetLobbies,
         Lobbies,
-        StartGame = 30,
-        GameStarted,
+        MakeAMove = 30,
+        AllMoves = 35,
+        InvalidMove,
+        BlackWon,
+        WhiteWon,
+        PieceMove
     }
 
     class Server
@@ -158,7 +179,6 @@ namespace Chess_server
 
 
 
-        // Recives a 256 bytes long msg 
         public static string ReceiveMsg(NetworkStream stream)
         {
             byte[] myReadBuffer = new byte[1024];

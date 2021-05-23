@@ -10,16 +10,16 @@ namespace Chess_server
 {
     class Database
     {
-        private const string fp = @"../../Db.sql";
+        private const string filePath = @"../../Db.sql";
         private static SQLiteConnection con;
 
         // Opens the database file, incase there isn't a database file it creates a new one
         public static void Open()
         {
-            if(!File.Exists(fp))
+            if(!File.Exists(filePath))
             {
-                SQLiteConnection.CreateFile(fp);
-                con = new SQLiteConnection("Data Source =" + fp + ";Version=3;");
+                SQLiteConnection.CreateFile(filePath);
+                con = new SQLiteConnection("Data Source =" + filePath + ";Version=3;");
                 con.Open();
 
                 var cmd = new SQLiteCommand(con);
@@ -31,7 +31,7 @@ namespace Chess_server
             }
             else
             {
-                con = new SQLiteConnection("Data Source =" + fp + ";Version=3;");
+                con = new SQLiteConnection("Data Source =" + filePath + ";Version=3;");
                 con.Open();
             }
         }

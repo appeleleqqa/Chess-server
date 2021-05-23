@@ -25,4 +25,16 @@ namespace Chess_server
         public int Code { get; set; }
         public List<string> Lobbies { get; set; }
     }
+
+    public class MovesListMsg
+    {
+        public int Code { get; set; }
+        public Dictionary<string, List<string>> Moves { get; set; }
+    }
+    
+    public class MoveMsg
+    {
+        public int Code { get; set; }
+        public string Move;
+    }
 }
