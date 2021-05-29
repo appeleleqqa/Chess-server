@@ -13,7 +13,9 @@ namespace Chess_server
         private const string filePath = @"../../Db.sql";
         private static SQLiteConnection con;
 
-        // Opens the database file, incase there isn't a database file it creates a new one
+        /// <summary>
+        /// Opens the database file, in the case where there isn't one it creates a new one
+        /// </summary>
         public static void Open()
         {
             if(!File.Exists(filePath))
@@ -36,8 +38,12 @@ namespace Chess_server
             }
         }
 
-        // Tries to add a user to the database
-        // Returns whether or not the action succeeded
+        /// <summary>
+        /// tries to add a new user to the database
+        /// </summary>
+        /// <param name="username">the player's username</param>
+        /// <param name="password">the player's password</param>
+        /// <returns>if the action was successful or not</returns>
         public static bool AddUser(string username, string password)
         {
             try
@@ -53,7 +59,12 @@ namespace Chess_server
             }
         }
 
-        // Checks if the password matches the username given by the client
+        /// <summary>
+        /// Checks if the password matches the username given by the client
+        /// </summary>
+        /// <param name="username">the player's username</param>
+        /// <param name="password">the player's password</param>
+        /// <returns>if the action was successful or not</returns>
         public static bool CheckPassword(string username, string password)
         {
             var cmd = new SQLiteCommand(con);

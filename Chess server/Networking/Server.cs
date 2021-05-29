@@ -25,7 +25,7 @@ namespace Chess_server
     // 7 - the user you are trying to log into is already in the server
     //
     //
-    // ___lobby Codes(10-29)___
+    // ___lobby Codes(10-30)___
     //
     // __client msg(10-15)__
     // 10 - client asks for a lobby to be opened 
@@ -39,7 +39,7 @@ namespace Chess_server
     // 16 - a player has joined the lobby
     // 17 - game started
     //
-    // __server responses(20 - 29)__
+    // __server responses(20 - 30)__
     // 20 - lobby succsessfuly created
     // 21 - lobby succsessfuly joined
     // 22 - lobby succsessfuly closed
@@ -50,20 +50,21 @@ namespace Chess_server
     // 27 - the player has been kicked from the lobby
     // 28 - the player asks for all the available lobbies
     // 29 - the server sends the player all the available lobbies
+    // 30 - Couldn't start game(no second player)
     //
     //
-    // ___game Codes(30-?)___
+    // ___game Codes(35-45)___
     //
-    // __client msg(30)__
-    // 30 - make a move
+    // __client msg(35)__
+    // 35 - make a move
     //
-    // __server notifications(35-?)__
-    // 35 - send all possible moves for the player
-    // 36 - invalid move
-    // 37 - white victory
-    // 38 - black victory
-    // 39 - move piece
-    // 40 - draw(ToDo)
+    // __server notifications(40-45)__
+    // 40 - send all possible moves for the player
+    // 41 - invalid move
+    // 42 - white victory
+    // 43 - black victory
+    // 44 - move piece
+    // 45 - draw(ToDo)
     enum msgCodes
     {
         userLogin = 1,
@@ -90,8 +91,9 @@ namespace Chess_server
         Kicked, 
         GetLobbies,
         Lobbies,
-        MakeAMove = 30,
-        AllMoves = 35,
+        CouldntStart,
+        MakeAMove = 35,
+        AllMoves = 40,
         InvalidMove,
         BlackWon,
         WhiteWon,
@@ -104,14 +106,19 @@ namespace Chess_server
         const int PORT = 5002;
         static TcpListener listener;
 
-        //opens a listening socket that accept clients on an infinite loop
-        //creates a thread for each client
+        
+
+        /// <summary>
+        /// opens the listening socket and starts accepting clients
+        /// on an infinite loop.
+        /// creates a thread for each client
+        /// </summary>
         public static void Listen()
         {
             try
             {
                 //create a new listening socket on port PORT
-                listener = new TcpListener(IPAddress.Parse("127.0.0.1"), PORT);
+                listener = new TcpListener(IPAddress.Parse("192.168.1.180"), PORT);
                 listener.Start();
                 Console.WriteLine("Waiting for connections...");
 
@@ -135,9 +142,13 @@ namespace Chess_server
             }
         }
 
-        //a function that is used to handel clients one by one(this will be run as a thread)
+        /// <summary>
+        /// takes care of each client
+        /// </summary>
+        /// <param name="cl">the client object</param>
         private static void HandleClient(object cl)
         {
+            //turn the client object into a TcpClient type(we get it as an object because threads can only get objects)
             if (!(cl is TcpClient))
                 throw new Exception("couldn't convert client");
             TcpClient client = (TcpClient)cl;
@@ -148,15 +159,17 @@ namespace Chess_server
 
             try
             {
+                //player login
                 while(username == string.Empty)
                     username = LoginManager.UserLogin(client, stream);
-                //this loop will work till a player has left, causing an Exception to be thrown
+                //after loging in the player can only join lobbies and play games until he quits
                 while(true)
                 {
                     lobby = LobbyManager.PlayerNavagation(username, stream);
-                    if (lobby.WaitForStart(username, stream) != null)
+                    ChessGame game = lobby.WaitForStart(username, stream);
+                    if (game != null)
                     {
-
+                        game.Play(username, stream);
                     }
                 }
 
@@ -178,7 +191,11 @@ namespace Chess_server
 
 
 
-
+        /// <summary>
+        /// receives a message from a network stream
+        /// </summary>
+        /// <param name="stream">the stream</param>
+        /// <returns>the message</returns>
         public static string ReceiveMsg(NetworkStream stream)
         {
             byte[] myReadBuffer = new byte[1024];

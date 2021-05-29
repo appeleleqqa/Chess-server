@@ -17,7 +17,12 @@ namespace Chess_server
         public static Dictionary<string, TcpClient> users = new Dictionary<string, TcpClient>();
 
 
-        //TODO: ADD MD5 TO PASSWORD
+        /// <summary>
+        /// takes care of users who have not logged in yet
+        /// </summary>
+        /// <param name="client">their client</param>
+        /// <param name="stream">thier stream</param>
+        /// <returns>their username after logging in or signing in</returns>
         public static string UserLogin(TcpClient client, NetworkStream stream)
         {
             while (true)

@@ -7,9 +7,15 @@ using System.Threading.Tasks;
 
 namespace Chess_server
 {
+    //a class representing a Pawn piece
     class Pawn
     {
-
+        /// <summary>
+        /// gets all possible moves for this piece
+        /// </summary>
+        /// <param name="position">the index on the board</param>
+        /// <param name="board">the board</param>
+        /// <returns>all possible moves</returns>
         public static List<string> PossibleMoves(Vector2 position, char[,] board)
         {
             //todo: Passant & promotion
@@ -31,6 +37,13 @@ namespace Chess_server
             return possibleMoves;
         }
 
+        /// <summary>
+        /// checks if a move is valid
+        /// </summary>
+        /// <param name="src">the starting index on the board</param>
+        /// <param name="dst">the destenation index on the board</param>
+        /// <param name="board">the board</param>
+        /// <returns>if a move was valid and why</returns>
         public static returnVals IsMoveValid(Vector2 src, Vector2 dst, char[,] board)
         {
             //check if everything is withing the board
@@ -40,16 +53,18 @@ namespace Chess_server
                 bool isWhite = Char.IsUpper(board[(int)src.X, (int)src.Y]);
                 bool Valid = false;
                 //general movemnt(-1 is moving up which is correct for the white player and 1 is down which is correct for the black player)
-                Valid = (int)(src.Y - dst.Y) == (isWhite ? -1 : 1);
+                Valid = (int)(dst.Y - src.Y) == (isWhite ? -1 : 1) && src.X == dst.X && board[(int)dst.X, (int)dst.Y] == '#';
                 //double move on first movement(checked by starting y(6 for white(which is 2 on board) and 1 for black(7 on board))
-                Valid = Valid || ((src.Y == ( isWhite ? 6 : 1)) && (src.Y - dst.Y == (isWhite ? -2 : 2)));
+                Valid = Valid || ((src.Y == ( isWhite ? 6 : 1)) && (dst.Y - src.Y == (isWhite ? -2 : 2)) && src.X == dst.X && board[(int)src.X, (int)src.Y + (isWhite ? -1 : 1)] == '#' && board[(int)dst.X, (int)dst.Y] == '#');
                 //eating a piece
-                Valid = Valid || (Char.IsUpper(board[(int)dst.X, (int)dst.Y]) != isWhite && board[(int)dst.X, (int)dst.Y] != '#' && (src.Y - dst.Y) == (isWhite ? -1 : 1) && Math.Abs(src.X - dst.X) == 1);
+                Valid = Valid || (Char.IsUpper(board[(int)dst.X, (int)dst.Y]) != isWhite && board[(int)dst.X, (int)dst.Y] != '#' && (dst.Y - src.Y) == (isWhite ? -1 : 1) && Math.Abs(src.X - dst.X) == 1);
                 if (Valid)
                 {
                     //checks if there is something blocking it from moving
                     if (board[(int)dst.X, (int)dst.Y] == '#' || (Char.IsUpper(board[(int)dst.X, (int)dst.Y]) ^ Char.IsUpper(board[(int)src.X, (int)src.Y])))
-                        return returnVals.Valid;// add chess check(king in danger)
+                    {
+                        return returnVals.Valid;
+                    }
                     return returnVals.SomethingInTheWay;
                 }
                 return returnVals.InvalidMovement;

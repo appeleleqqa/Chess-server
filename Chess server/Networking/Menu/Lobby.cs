@@ -9,6 +9,7 @@ using System.Collections.Generic;
 
 namespace Chess_server
 {
+	//a class representing a lobby
 	class Lobby
 	{
 		private static Dictionary<string, Lobby> existingLobbies = new Dictionary<string, Lobby>();
@@ -21,8 +22,10 @@ namespace Chess_server
 		private msgCodes hostMsg;
 		private ChessGame game = null;
 
-		//creates a new lobby
-		//throws an exception on fail
+		/// <summary>
+		/// creates a new lobby, if lobby creation fails throws an exception
+		/// </summary>
+		/// <param name="username">host's username</param>
 		public Lobby(string username)
 		{
 			//check if the lobby already exists
@@ -39,36 +42,53 @@ namespace Chess_server
 			msgAvb = false;
 		}
 
-		//tries to join a lobby, returns the msgCode that tells you what is the outcome and the lobby you joined
-		//if the player didn't manage to join lobby = null
+
+		/// <summary>
+		/// tries to join a lobby
+		/// </summary>
+		/// <param name="username">player's name</param>
+		/// <param name="hostname">host's name</param>
+		/// <returns>both a msg code that says if opening the lobby was successful or not
+		///			 and a lobby object(if joining the lobby fail this will be null</returns>
 		public static  Tuple<msgCodes, Lobby> JoinLobby(string username, string hostname)
         {
 			lobbiesMutex.WaitOne();
+			//first checks if the lobby exists
 			if(!existingLobbies.ContainsKey(hostname))
 				return new Tuple<msgCodes, Lobby>(msgCodes.LobbyDoesntExist, null);
+			//then checks if it is joinable
 			if (existingLobbies[hostname].IsJoinable())
             {
+				//lets the player join the lobby
 				existingLobbies[hostname].player2 = username;
 				LobbyMsg lby = new LobbyMsg();
 				lby.Username = username;
 				lby.Code = (int)msgCodes.PlayerJoined;
 				string msg = JsonConvert.SerializeObject(lby);
 				existingLobbies[hostname].hostStream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
-				return new Tuple<msgCodes, Lobby>(msgCodes.LobbyJoined, existingLobbies[hostname]) ;
-            }
+				Tuple < msgCodes, Lobby > retVal = new Tuple<msgCodes, Lobby>(msgCodes.LobbyJoined, existingLobbies[hostname]);
+				lobbiesMutex.ReleaseMutex();
+				return retVal;
+			}
+			lobbiesMutex.ReleaseMutex();
 			return new Tuple<msgCodes, Lobby>(msgCodes.LobbyFull, null);
         }
 
-		//checks if a lobby is joinable
+		/// <summary>
+		/// checks if a lobby is joinable
+		/// </summary>
+		/// <returns>whether or not the lobby is joinable</returns>
 		public bool IsJoinable()
         {
 			if (player2 == string.Empty)
 				return true;
 			return false;
 		}
-
-		//goes over every lobby in the static array of lobbies and check which ones are joinable
-		//retruns a json array with the coresponding code and the array of joinable lobbies
+		
+		/// <summary>
+		/// finds all the lobbies that are joinable
+		/// </summary>
+		/// <returns>all joinable lobbies</returns>
 		public static List<string> JoinableLobbiesJson()
 		{
 			List<string> lobbies = new List<string>();
@@ -81,8 +101,10 @@ namespace Chess_server
 			lobbiesMutex.ReleaseMutex();
 			return lobbies;
 		}
-
-		//closes a lobby
+		/// <summary>
+		/// closes a lobby by hostname
+		/// </summary>
+		/// <param name="hostname">hostname</param>
 		public static void CloseLobby(string hostname)
 		{
 			if (existingLobbies.ContainsKey(hostname))
@@ -93,12 +115,18 @@ namespace Chess_server
 					lby.hostMsg = msgCodes.LobbyClosed;
 					lby.msgAvb = true;
 				}
+				lobbiesMutex.WaitOne();
 				existingLobbies.Remove(hostname);
+				lobbiesMutex.ReleaseMutex();
 			}
 		}
 
-		//this function is called right after a player joins the lobby
-		//it calls a function that is diffrent for the host and the 2nd player
+		/// <summary>
+		/// sends each player to the function he should be waiting in for the game to start
+		/// </summary>
+		/// <param name="username">the player's name</param>
+		/// <param name="stream">the player's network stream</param>
+		/// <returns></returns>
 		public ChessGame WaitForStart(string username, NetworkStream stream)
         {
 			if (hostName == username)
@@ -106,16 +134,23 @@ namespace Chess_server
 			return PlayerLobby(stream);
         }
 
-		//the function that runs while a player is in a lobby he created
-		//lets the host send commands to the server(kick, close lobby and start game)
+		/// <summary>
+		/// the function the host "waits" on for the game to start,
+		/// gives him all the abilities to kick or close the lobby or start the game
+		/// </summary>
+		/// <param name="stream">the player's stream</param>
+		/// <returns>the game object(if the game didn't start returns null)</returns>
 		private ChessGame HostLobby(NetworkStream stream)
         {
+			string msg;
 			hostStream = stream;
+			//receive commands from the host
 			while (true)
 			{
 				hostMsg = (msgCodes)int.Parse(Server.ReceiveMsg(stream));
 				if (hostMsg == msgCodes.KickPlayer)
 					msgAvb = true;
+				//if the commands makes the lobby close get our of the receive loop
 				else if (hostMsg == msgCodes.CloseLobby || hostMsg == msgCodes.StartGame)
 					break;
 			}
@@ -125,18 +160,36 @@ namespace Chess_server
 					CloseLobby(hostName);
 					return null;
 				case msgCodes.StartGame:
-					game = new ChessGame(hostName);
-					msgAvb = true;
-					return game;
+					//check if there is another player
+					if (player2 != string.Empty)
+					{
+						//create a game and notify both the host and second player
+						game = new ChessGame(hostName);
+						msg = ((int)msgCodes.GameStarted).ToString();
+						stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
+						msgAvb = true;
+						return game;
+					}
+					else
+                    {
+						msg = ((int)msgCodes.CouldntStart).ToString();
+						stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
+					}
+					break;
             }				
 			return null;
         }
 
-		//the function that runs while a player is in a lobby he joined
-		//waits for the host to send a message and sents it to the player
+
+		/// <summary>
+		/// the function the player "waits" on while waiting for a game to start
+		/// just waits for the host to send something and acts on it
+		/// </summary>
+		/// <param name="stream">the player's name</param>
+		/// <returns>the game object(if the game didn't start returns null)</returns>
 		private ChessGame PlayerLobby(NetworkStream stream)
         {
-			while (!msgAvb) ;
+			while (!msgAvb) ;//wait for the host to send a message
 			msgAvb = false;
 			string msg;
 			switch (hostMsg)
@@ -152,6 +205,9 @@ namespace Chess_server
 					stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
 					return null;
 				case msgCodes.StartGame:
+					msg = ((int)msgCodes.GameStarted).ToString();
+					stream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
+					existingLobbies.Remove(hostName);
 					return game;
             }
 			return null;

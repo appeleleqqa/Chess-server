@@ -7,8 +7,15 @@ using System.Threading.Tasks;
 
 namespace Chess_server
 {
+    //a class representing a King piece
     class King
     {
+        /// <summary>
+        /// gets all possible moves for this piece
+        /// </summary>
+        /// <param name="position">the index on the board</param>
+        /// <param name="board">the board</param>
+        /// <returns>all possible moves</returns>
         public static List<string> PossibleMoves(Vector2 position, char[,] board)
         {
             //todo:add castling
@@ -52,18 +59,28 @@ namespace Chess_server
             return possibleMoves;
         }
 
+        /// <summary>
+        /// checks if a move is valid
+        /// </summary>
+        /// <param name="src">the starting index on the board</param>
+        /// <param name="dst">the destenation index on the board</param>
+        /// <param name="board">the board</param>
+        /// <returns>if a move was valid and why</returns>
         public static returnVals IsMoveValid(Vector2 src, Vector2 dst, char[,] board)
         {
+            bool isWhite = Char.IsUpper(board[(int)src.X, (int)src.Y]);
             //check if everything is withing the board
             if (src.X >= 0 && src.X <= 7 && src.Y >= 0 && src.Y <= 7 && dst.X >= 0 && dst.X <= 7 && dst.Y >= 0 && dst.Y <= 7)
             {
-                // valid king movement
+                //valid king movement
                 if ((Math.Abs(src.X - dst.X) <= 1 && Math.Abs(src.Y - dst.Y) <= 1) && !(Math.Abs(src.X - dst.X) == 0 && Math.Abs(src.Y - dst.Y) == 0))
                 {
                     //checks if there is something blocking it from moving
                     if (board[(int)dst.X, (int)dst.Y] == '#' || (Char.IsUpper(board[(int)dst.X, (int)dst.Y]) ^ Char.IsUpper(board[(int)src.X, (int)src.Y])))
-                        return returnVals.Valid;// add chess check(king in danger)
-                    return returnVals.OutOfBounds;
+                    {
+                        return returnVals.Valid;
+                    }
+                    return returnVals.SomethingInTheWay;
                 }
                 return returnVals.InvalidMovement;
             }

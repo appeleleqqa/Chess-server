@@ -12,7 +12,13 @@ namespace Chess_server
     //takes care of cenarios that revolve a lobby
     class LobbyManager
     {
-        //while in the menu if a player sends a message this function will navagate the answer to him
+       
+        /// <summary>
+        /// takes care of all the possible routes the player can take before joining a lobby
+        /// </summary>
+        /// <param name="username">the player's name</param>
+        /// <param name="stream">the player's network stream</param>
+        /// <returns>the lobby the player joined</returns>
         public static Lobby PlayerNavagation(string username, NetworkStream stream)
         {
             while(true)
